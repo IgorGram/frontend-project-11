@@ -1,0 +1,16 @@
+name: custom-check
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '**'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hexlet project custom check
+        uses: actions/checkout@v2
+      - run: make install
+      - run: make lint
