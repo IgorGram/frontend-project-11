@@ -1,21 +1,34 @@
 import onChange from 'on-change';
 
-const renderInputField = (val, elements) => {
-  const inputEl = elements.input;
-  if (!val) {
-    inputEl.classList.add('is-invalid');
-  } else {
-    inputEl.classList.remove('is-invalid');
-  }
+export default (state, elements, i18next) => {
+  const renderInputField = () => {
+    const { form: { valid, error } } = state;
+    const { input, feedback } = elements;
+
+    if (!valid) {
+      input.classList.add('is-invalid');
+      feedback.textContent = i18next.t(`${error}`);
+    } else {
+      input.classList.remove('is-invalid');
+    }
+  };
+
+  const handleFeed = () => {
+    const { input, feedback } = elements;
+    input.value = '';
+    feedback.textContent = '';
+  };
+  return onChange(state, (path) => {
+    switch (path) {
+      case 'feeds':
+        handleFeed();
+        break;
+      case 'form':
+        renderInputField();
+        // eslint-disable-next-line no-param-reassign
+        break;
+      default:
+        break;
+    }
+  });
 };
-export default (state, elements) => onChange(state, (path, value) => {
-  switch (path) {
-    case 'isValid':
-      renderInputField(value, elements);
-      // eslint-disable-next-line no-param-reassign
-      elements.feedback.textContent = state.form.error;
-      break;
-    default:
-      break;
-  }
-});
