@@ -13,7 +13,7 @@ export default {
     },
     feeds: ' Фиды',
     posts: 'Посты',
-    preview: 'Превью',
+    preview: 'Просмотр',
 
   },
 };
