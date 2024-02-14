@@ -52,8 +52,7 @@ export default (initState, elements, i18next) => {
   };
 
   const handlePosts = (state) => {
-    console.log('posts');
-    const { posts } = state;
+    const { posts, ui } = state;
     const { postsBox } = elements;
 
     const fragmentStructure = document.createElement('div');
@@ -75,13 +74,21 @@ export default (initState, elements, i18next) => {
       element.classList.add('list-group-item', 'd-flex', 'justify-content-between', 'align-items-start', 'border-0', 'border-end-0');
       const link = document.createElement('a');
       link.setAttribute('href', post.link);
-
+      const className = ui.seenPosts.has(post.id) ? ['fw-normal', 'link-secondary'] : ['fw-bold'];
+      link.classList.add(...className);
       link.dataset.id = post.id;
       link.textContent = post.title;
       link.setAttribute('target', '_blank');
       link.setAttribute('rel', 'noopener noreferrer');
       element.appendChild(link);
-
+      const button = document.createElement('button');
+      button.setAttribute('type', 'button');
+      button.classList.add('btn', 'btn-outline-primary', 'btn-sm');
+      button.dataset.id = post.id;
+      button.dataset.bsToggle = 'modal';
+      button.dataset.bsTarget = '#modal';
+      button.textContent = i18next.t('preview');
+      element.appendChild(button);
       return element;
     });
 
@@ -97,13 +104,11 @@ export default (initState, elements, i18next) => {
 
     switch (status) {
       case 'failed':
-        console.log('failed');
         input.classList.add('is-invalid');
         feedback.classList.add('text-danger');
         feedback.textContent = i18next.t(`${error}`);
         break;
       case 'success':
-        console.log('success');
         input.value = '';
         feedback.classList.add('text-success');
         feedback.textContent = i18next.t('loading.success');
@@ -111,13 +116,23 @@ export default (initState, elements, i18next) => {
         input.focus();
         break;
       case 'loading':
-        console.log('loading');
         feedback.classList.remove('text-success');
         feedback.classList.remove('text-danger');
         feedback.innerHTML = '';
         break;
       default:
     }
+  };
+
+  const handleModal = (state) => {
+    const post = state.posts.find(({ id }) => id === state.modal.postId);
+    const title = elements.modal.querySelector('.modal-title');
+    const body = elements.modal.querySelector('.modal-body');
+    const fullArticleBtn = elements.modal.querySelector('.full-article');
+
+    title.textContent = post.title;
+    body.textContent = post.description;
+    fullArticleBtn.href = post.link;
   };
 
   return onChange(initState, (path) => {
@@ -133,6 +148,14 @@ export default (initState, elements, i18next) => {
         break;
       case 'loadingProcess.status':
         handleLoadingProcessStatus(initState);
+        break;
+      case 'modal.postId':
+        handleModal(initState);
+        break;
+      case 'ui.seenPosts':
+        handlePosts(initState);
+        break;
+
         // eslint-disable-next-line no-fallthrough
       default:
         break;

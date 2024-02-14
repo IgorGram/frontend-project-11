@@ -21,14 +21,9 @@ const fetchNewPosts = (watchedState) => {
     .then((response) => {
       const feedData = parse(response.data.contents);
       const newPosts = feedData.items.map((item) => ({ ...item, channelId: feed.id }));
-      console.log('newPosts', newPosts);
-
       const oldPosts = watchedState.posts.filter((post) => post.channelId === feed.id);
-
       const posts = differenceWith(newPosts, oldPosts, (p1, p2) => p1.title === p2.title)
         .map((post) => ({ ...post, id: uniqueId() }));
-
-      // https://lorem-rss.hexlet.app/feed?unit=second&length=2
       watchedState.posts.unshift(...posts);
     })
     .catch((e) => {
@@ -41,7 +36,7 @@ const fetchNewPosts = (watchedState) => {
 const loadRss = (watchedState, url) => {
   // eslint-disable-next-line no-param-reassign
   watchedState.loadingProcess.status = 'loading';
-  axios.get(`https://allorigins.hexlet.app/get?url=${encodeURIComponent(url)}`)
+  axios.get(addProxy(url))
     .then((response) => {
       const feedData = parse(response.data.contents);
       const feed = {
@@ -56,9 +51,17 @@ const loadRss = (watchedState, url) => {
       // eslint-disable-next-line no-param-reassign
       watchedState.loadingProcess.status = 'success';
     })
-    .catch(() => {
+    .catch((e) => {
+      let errorText;
+      if (e.isParsingError) {
+        errorText = 'errors.noRss';
+      }
+      if (e.isAxiosError) {
+        errorText = 'errors.network';
+      }
+
       // eslint-disable-next-line no-param-reassign
-      watchedState.loadingProcess.error = 'errors.noRss';
+      watchedState.loadingProcess.error = errorText;
       // eslint-disable-next-line no-param-reassign
       watchedState.loadingProcess.status = 'failed';
     });
@@ -77,6 +80,13 @@ export default () => {
       status: '',
       error: null,
     },
+    modal: {
+      postId: null,
+    },
+    ui: {
+      seenPosts: new Set(),
+    },
+
   };
 
   const elements = {
@@ -130,6 +140,17 @@ export default () => {
           };
         });
     });
+
+    elements.postsBox.addEventListener('click', (evt) => {
+      if (!('id' in evt.target.dataset)) {
+        return;
+      }
+
+      const { id } = evt.target.dataset;
+      watchedState.modal.postId = String(id);
+      watchedState.ui.seenPosts.add(id);
+    });
+
     setTimeout(() => fetchNewPosts(watchedState), fetchingTimeout);
   });
 };
