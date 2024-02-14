@@ -21,14 +21,9 @@ const fetchNewPosts = (watchedState) => {
     .then((response) => {
       const feedData = parse(response.data.contents);
       const newPosts = feedData.items.map((item) => ({ ...item, channelId: feed.id }));
-      console.log('newPosts', newPosts);
-
       const oldPosts = watchedState.posts.filter((post) => post.channelId === feed.id);
-
       const posts = differenceWith(newPosts, oldPosts, (p1, p2) => p1.title === p2.title)
         .map((post) => ({ ...post, id: uniqueId() }));
-
-      // https://lorem-rss.hexlet.app/feed?unit=second&length=2
       watchedState.posts.unshift(...posts);
     })
     .catch((e) => {
@@ -77,6 +72,13 @@ export default () => {
       status: '',
       error: null,
     },
+    modal: {
+      postId: null,
+    },
+    ui: {
+      seenPosts: new Set(),
+    },
+
   };
 
   const elements = {
@@ -130,6 +132,17 @@ export default () => {
           };
         });
     });
+
+    elements.postsBox.addEventListener('click', (evt) => {
+      if (!('id' in evt.target.dataset)) {
+        return;
+      }
+
+      const { id } = evt.target.dataset;
+      watchedState.modal.postId = String(id);
+      watchedState.ui.seenPosts.add(id);
+    });
+
     setTimeout(() => fetchNewPosts(watchedState), fetchingTimeout);
   });
 };

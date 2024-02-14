@@ -4,11 +4,9 @@ export default (data) => {
 
   const errorNode = dom.querySelector('parsererror');
   if (errorNode) {
-    console.log('frerf');
     throw new Error(errorNode.textContent);
   }
 
-  console.log('seee');
   const channelEl = dom.querySelector('channel');
   const channelTitle = channelEl.querySelector('title').textContent;
   const channelDescription = channelEl.querySelector('description').textContent;
