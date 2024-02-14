@@ -2,11 +2,44 @@ import * as yup from 'yup';
 import i18next from 'i18next';
 import axios from 'axios';
 import uniqueId from 'lodash/uniqueId.js';
+import differenceWith from 'lodash/differenceWith.js';
 import watch from './watchers.js';
 import resources from './locales/index.js';
 import parse from './rss.js';
 
+const fetchingTimeout = 5000;
+
+const addProxy = (url) => {
+  const urlWithProxy = new URL('/get', 'https://allorigins.hexlet.app');
+  urlWithProxy.searchParams.set('url', url);
+  urlWithProxy.searchParams.set('disableCache', 'true');
+  return urlWithProxy.toString();
+};
+
+const fetchNewPosts = (watchedState) => {
+  const promises = watchedState.feeds.map((feed) => axios.get(addProxy(feed.url))
+    .then((response) => {
+      const feedData = parse(response.data.contents);
+      const newPosts = feedData.items.map((item) => ({ ...item, channelId: feed.id }));
+      console.log('newPosts', newPosts);
+
+      const oldPosts = watchedState.posts.filter((post) => post.channelId === feed.id);
+
+      const posts = differenceWith(newPosts, oldPosts, (p1, p2) => p1.title === p2.title)
+        .map((post) => ({ ...post, id: uniqueId() }));
+
+      // https://lorem-rss.hexlet.app/feed?unit=second&length=2
+      watchedState.posts.unshift(...posts);
+    })
+    .catch((e) => {
+      console.error(e);
+    }));
+  Promise.all(promises).finally(() => {
+    setTimeout(() => fetchNewPosts(watchedState), fetchingTimeout);
+  });
+};
 const loadRss = (watchedState, url) => {
+  // eslint-disable-next-line no-param-reassign
   watchedState.loadingProcess.status = 'loading';
   axios.get(`https://allorigins.hexlet.app/get?url=${encodeURIComponent(url)}`)
     .then((response) => {
@@ -15,14 +48,18 @@ const loadRss = (watchedState, url) => {
         url, id: uniqueId(), title: feedData.title, description: feedData.description,
       };
       const posts = feedData.items.map((item) => ({ ...item, channelId: feed.id, id: uniqueId() }));
-      watchedState.feeds.unshift(feed);
       watchedState.posts.unshift(...posts);
+      watchedState.feeds.unshift(feed);
 
+      // eslint-disable-next-line no-param-reassign
       watchedState.loadingProcess.error = null;
+      // eslint-disable-next-line no-param-reassign
       watchedState.loadingProcess.status = 'success';
     })
     .catch(() => {
+      // eslint-disable-next-line no-param-reassign
       watchedState.loadingProcess.error = 'errors.noRss';
+      // eslint-disable-next-line no-param-reassign
       watchedState.loadingProcess.status = 'failed';
     });
 };
@@ -93,5 +130,6 @@ export default () => {
           };
         });
     });
+    setTimeout(() => fetchNewPosts(watchedState), fetchingTimeout);
   });
 };

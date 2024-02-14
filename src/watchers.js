@@ -52,6 +52,7 @@ export default (initState, elements, i18next) => {
   };
 
   const handlePosts = (state) => {
+    console.log('posts');
     const { posts } = state;
     const { postsBox } = elements;
 
